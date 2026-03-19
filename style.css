@@ -651,15 +651,22 @@ body {
   }
 
   .top-bar-meta {
-    align-items: flex-start;
+    width: 100%;
+    display: grid;
+    grid-template-columns: auto auto;
+    justify-content: end;
+    align-items: center;
+    gap: 6px 8px;
   }
 
   .lecture-path {
+    grid-column: 1 / -1;
+    justify-self: start;
     text-align: left;
   }
 
   .slide-jump-form {
-    width: 100%;
+    width: auto;
   }
 
   .slide-jump-input {
