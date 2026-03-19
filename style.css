@@ -500,6 +500,15 @@ body {
   transition: background 0.2s ease, transform 0.2s ease;
 }
 
+.text-button {
+  width: auto;
+  min-width: 52px;
+  padding: 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .icon-button:hover {
   background: #efe7dc;
   transform: translateY(-1px);
@@ -597,6 +606,12 @@ body {
 
   .edit-action-button {
     width: fit-content;
+  }
+
+  .text-button {
+    min-width: 50px;
+    padding: 0 10px;
+    font-size: 13px;
   }
 
 }
