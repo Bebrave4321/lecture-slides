@@ -1,0 +1,122 @@
+[
+  {
+    "file_name": "ㅇㅈ1_260320_041308_1.jpg",
+    "result": {
+      "skip": false,
+      "terms": [
+        {
+          "english": "Embryonic period",
+          "korean": "배자기"
+        },
+        {
+          "english": "organogenic period",
+          "korean": "기관발생기"
+        },
+        {
+          "english": "teratogen",
+          "korean": "기형유발물질"
+        },
+        {
+          "english": "congenital anomalies",
+          "korean": "선천성기형"
+        }
+      ],
+      "explanation": "이 슬라이드는 배아가 만들어지는 시기인 embryonic period를 설명합니다. 임신 4주에서 8주 사이에는 organogenic period가 진행되며, 이때 외배엽, 중배엽, 내배엽에서 여러 조직과 기관이 본격적으로 형성됩니다. 그래서 이 시기는 태아 발달에서 매우 중요한 시기이며, 외부 자극에 특히 민감합니다. 만약 teratogen 같은 기형유발물질에 노출되면 congenital anomalies, 즉 심각한 선천성기형이 생길 수 있습니다.",
+      "review": ""
+    },
+    "usage": {
+      "input_tokens": 2261,
+      "output_tokens": 207,
+      "total_tokens": 2468
+    }
+  },
+  {
+    "file_name": "ㅇㅈ1_260320_041308_2.jpg",
+    "result": {
+      "skip": false,
+      "terms": [
+        {
+          "english": "Embryonic period",
+          "korean": "배아기"
+        }
+      ],
+      "explanation": "이 슬라이드는 태아가 아주 초기 단계에서 자라는 배아기를 설명합니다. 배아기는 보통 4주에서 8주 사이를 말하며, 이 시기에 몸의 기본 구조가 빠르게 만들어집니다. 그림은 주차별로 배아의 모습이 어떻게 변하는지 보여 주며, 점점 사람의 형태에 가까워지는 과정을 나타냅니다. 특히 8주가 되면 배아는 이제 명확한 사람 모양을 띠게 됩니다.",
+      "review": ""
+    },
+    "usage": {
+      "input_tokens": 2261,
+      "output_tokens": 141,
+      "total_tokens": 2402
+    }
+  },
+  {
+    "file_name": "ㅇㅈ1_260320_041308_3.jpg",
+    "result": {
+      "skip": false,
+      "terms": [
+        {
+          "english": "embryo",
+          "korean": "배아"
+        },
+        {
+          "english": "amnion",
+          "korean": "양막"
+        },
+        {
+          "english": "umbilical vesicle",
+          "korean": "배꼽소포"
+        },
+        {
+          "english": "head fold",
+          "korean": "머리주름"
+        },
+        {
+          "english": "lateral fold",
+          "korean": "가쪽주름"
+        }
+      ],
+      "explanation": "이 슬라이드는 배아가 납작한 모양에서 입체적인 원통형으로 접히는 과정을 보여줍니다. 배아는 앞뒤 방향으로 접히는 머리주름과 꼬리주름, 그리고 양쪽에서 안쪽으로 접히는 가쪽주름이 생기면서 몸의 형태가 만들어집니다. 이 과정에서 양막과 배꼽소포의 위치 관계도 함께 바뀌어, 배아의 몸통이 점점 더 분명해집니다. 오른쪽 그림들은 이런 접힘이 여러 방향에서 어떻게 일어나는지 단계별로 나타낸 것입니다.",
+      "review": ""
+    },
+    "usage": {
+      "input_tokens": 2261,
+      "output_tokens": 225,
+      "total_tokens": 2486
+    }
+  },
+  {
+    "file_name": "ㅇㅈ1_260320_041308_4.jpg",
+    "result": {
+      "skip": false,
+      "terms": [
+        {
+          "english": "head fold",
+          "korean": "머리주름"
+        },
+        {
+          "english": "tail fold",
+          "korean": "꼬리주름"
+        },
+        {
+          "english": "neural tube",
+          "korean": "신경관"
+        },
+        {
+          "english": "foregut",
+          "korean": "앞창자"
+        },
+        {
+          "english": "hindgut",
+          "korean": "뒤창자"
+        }
+      ],
+      "explanation": "이 슬라이드는 배아 4주경에 일어나는 머리주름과 꼬리주름을 설명합니다. 머리주름은 뇌의 원기와 신경관 앞부분이 자라면서 생기고, 이 과정에서 난황주머니의 일부가 앞창자 형태로 몸 안쪽으로 들어옵니다. 꼬리주름은 척수의 원기가 되는 신경관 꼬리부분의 성장 때문에 생기며, 난황주머니의 일부가 뒤창자 형태로 배아 안에 편입됩니다. 오른쪽 그림은 배아가 접히면서 머리 쪽과 꼬리 쪽 구조가 어떻게 바뀌는지 보여 줍니다.",
+      "review": ""
+    },
+    "usage": {
+      "input_tokens": 2261,
+      "output_tokens": 239,
+      "total_tokens": 2500
+    }
+  }
+]

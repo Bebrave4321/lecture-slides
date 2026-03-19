@@ -11,6 +11,13 @@
           "description": "기존 단일 강의 데이터를 그대로 연결한 1단계 구조입니다.",
           "resultsPath": "results.json",
           "slidesPath": "slides"
+        },
+        {
+          "id": "incoming-lecture1",
+          "title": "lecture1",
+          "description": "OpenAI Batch API로 생성한 테스트 강의입니다.",
+          "resultsPath": "incoming/lecture1/results.json",
+          "slidesPath": "incoming/lecture1/slides"
         }
       ]
     }

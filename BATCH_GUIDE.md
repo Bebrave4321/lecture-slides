@@ -2,6 +2,8 @@
 
 이 문서는 `강의 이미지 폴더 -> OpenAI Batch API -> results.json` 흐름을 가장 간단하게 쓰기 위한 안내입니다.
 
+기본 호출 모델은 `gpt-5.4-mini`입니다.
+
 ## 준비물
 
 - 슬라이드 이미지 폴더
@@ -9,10 +11,10 @@
 - `openai` Python 패키지
 - `OPENAI_API_KEY` 환경 변수
 
-예시 폴더:
+프로젝트 안에서 가장 쉽게 쓰려면 이런 구조를 추천합니다.
 
-- `C:\lectures\embryology-01\slides\slide1.jpg`
-- `C:\lectures\embryology-01\slides\slide2.jpg`
+- `C:\Users\LG\OneDrive\Desktop\slide_test\incoming\lecture1\slides\slide1.jpg`
+- `C:\Users\LG\OneDrive\Desktop\slide_test\incoming\lecture1\slides\slide2.jpg`
 
 완료되면 같은 강의 폴더에 `results.json`이 생성됩니다.
 
@@ -35,7 +37,7 @@ $env:OPENAI_API_KEY="여기에_본인_API_키"
 슬라이드 폴더를 기준으로 아래 명령을 실행합니다.
 
 ```powershell
-python tools/lecture_batch.py start --slides-dir "C:\lectures\embryology-01\slides"
+python tools/lecture_batch.py start --slides-dir "C:\Users\LG\OneDrive\Desktop\slide_test\incoming\lecture1\slides"
 ```
 
 이 명령이 하는 일:
@@ -46,10 +48,24 @@ python tools/lecture_batch.py start --slides-dir "C:\lectures\embryology-01\slid
 - Batch 작업 시작
 - 강의 폴더 아래 `.openai-batch` 작업 폴더 생성
 
+이 명령을 실행하면 모델 번호를 고를 수 있습니다.
+
+- `1` = `gpt-5.4-mini`
+- `2` = `gpt-5-mini`
+- `3` = `gpt-5.4`
+
+그냥 Enter를 누르면 `gpt-5.4-mini`가 선택됩니다.
+
+모델명을 직접 적고 싶으면 `--model` 옵션도 계속 쓸 수 있습니다.
+
+```powershell
+python tools/lecture_batch.py start --slides-dir "C:\Users\LG\OneDrive\Desktop\slide_test\incoming\lecture1\slides" --model "gpt-5-mini"
+```
+
 ## 3. 상태 확인
 
 ```powershell
-python tools/lecture_batch.py status --work-dir "C:\lectures\embryology-01\.openai-batch"
+python tools/lecture_batch.py status --work-dir "C:\Users\LG\OneDrive\Desktop\slide_test\incoming\lecture1\.openai-batch"
 ```
 
 `completed`가 나오면 다음 단계로 갑니다.
@@ -57,13 +73,13 @@ python tools/lecture_batch.py status --work-dir "C:\lectures\embryology-01\.open
 ## 4. results.json 만들기
 
 ```powershell
-python tools/lecture_batch.py finish --work-dir "C:\lectures\embryology-01\.openai-batch"
+python tools/lecture_batch.py finish --work-dir "C:\Users\LG\OneDrive\Desktop\slide_test\incoming\lecture1\.openai-batch"
 ```
 
 완료되면:
 
-- `C:\lectures\embryology-01\results.json`
-- `C:\lectures\embryology-01\.openai-batch\summary.json`
+- `C:\Users\LG\OneDrive\Desktop\slide_test\incoming\lecture1\results.json`
+- `C:\Users\LG\OneDrive\Desktop\slide_test\incoming\lecture1\.openai-batch\summary.json`
 
 이 생성됩니다.
 

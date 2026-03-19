@@ -17,9 +17,14 @@ except ImportError as exc:
 
 
 PROMPT_VERSION = "2026-03-20"
-DEFAULT_MODEL = "gpt-5-mini"
+DEFAULT_MODEL = "gpt-5.4-mini"
 DEFAULT_MAX_COMPLETION_TOKENS = 1200
 SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+MODEL_CHOICES = [
+    ("1", "gpt-5.4-mini", "권장 기본값"),
+    ("2", "gpt-5-mini", "더 저렴한 선택"),
+    ("3", "gpt-5.4", "더 강한 모델"),
+]
 
 SLIDE_SCHEMA = {
     "name": "slide_result",
@@ -179,6 +184,23 @@ def save_job(work_dir: Path, job: dict):
     write_json(work_dir / "job.json", job)
 
 
+def choose_model_interactively() -> str:
+    print("사용할 모델을 고르세요.")
+    for key, model_name, description in MODEL_CHOICES:
+        print(f"{key}. {model_name} ({description})")
+
+    while True:
+        selected = input(f"번호 입력 [기본값 {MODEL_CHOICES[0][0]}]: ").strip()
+        if not selected:
+            return DEFAULT_MODEL
+
+        for key, model_name, _ in MODEL_CHOICES:
+            if selected == key:
+                return model_name
+
+        print("올바른 번호를 입력해 주세요.")
+
+
 def create_request_rows(slides: list[Path], model: str, max_completion_tokens: int) -> tuple[list[dict], list[dict]]:
     request_rows = []
     manifest_rows = []
@@ -206,6 +228,7 @@ def create_request_rows(slides: list[Path], model: str, max_completion_tokens: i
 
 
 def command_start(args):
+    model_name = args.model or choose_model_interactively()
     slides_dir = normalize_path(args.slides_dir)
     slides = ensure_slides_dir(slides_dir)
     work_dir = normalize_path(args.work_dir) if args.work_dir else default_work_dir(slides_dir)
@@ -214,7 +237,7 @@ def command_start(args):
 
     request_rows, manifest_rows = create_request_rows(
         slides,
-        model=args.model,
+        model=model_name,
         max_completion_tokens=args.max_completion_tokens,
     )
 
@@ -228,7 +251,7 @@ def command_start(args):
         manifest_path,
         {
             "prompt_version": PROMPT_VERSION,
-            "model": args.model,
+            "model": model_name,
             "slides_dir": str(slides_dir),
             "results_path": str(results_path),
             "created_at": now_iso(),
@@ -265,7 +288,7 @@ def command_start(args):
             "manifest_path": str(manifest_path),
             "raw_output_path": str(raw_output_path),
             "raw_error_path": str(raw_error_path),
-            "model": args.model,
+            "model": model_name,
             "prompt_version": PROMPT_VERSION,
             "created_at": now_iso(),
         },
@@ -274,6 +297,7 @@ def command_start(args):
     print("배치 작업을 시작했습니다.")
     print(f"- slides_dir: {slides_dir}")
     print(f"- work_dir: {work_dir}")
+    print(f"- model: {model_name}")
     print(f"- batch_id: {batch.id}")
     print("")
     print("다음 확인 명령:")
@@ -510,7 +534,10 @@ def build_parser():
         "--results-path",
         help='완성된 results.json 경로 (기본값: 강의 폴더의 "results.json")',
     )
-    start_parser.add_argument("--model", default=DEFAULT_MODEL, help="사용할 모델")
+    start_parser.add_argument(
+        "--model",
+        help="사용할 모델 이름. 입력하지 않으면 실행 중 번호로 선택합니다.",
+    )
     start_parser.add_argument(
         "--max-completion-tokens",
         type=int,
