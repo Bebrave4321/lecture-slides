@@ -1,0 +1,114 @@
+[
+  {
+    "file_name": "slide1.jpg",
+    "result": {
+      "skip": true,
+      "terms": [],
+      "explanation": "[설명 생략] 단원/구분 슬라이드로 판단되어 설명을 생략합니다.",
+      "review": "여기는 내가 나중에 복습 메모를 적는 칸"
+    },
+    "usage": {
+      "input_tokens": 2107,
+      "output_tokens": 133,
+      "total_tokens": 2240
+    }
+  },
+  {
+    "file_name": "slide2.jpg",
+    "result": {
+      "skip": false,
+      "terms": [
+        {
+          "english": "paraxial mesoderm",
+          "korean": "축측중배엽"
+        },
+        {
+          "english": "intermediate mesoderm",
+          "korean": "중간중배엽"
+        },
+        {
+          "english": "lateral mesoderm",
+          "korean": "가쪽중배엽"
+        },
+        {
+          "english": "somite",
+          "korean": "체절(몸분절)"
+        }
+      ],
+      "explanation": "배아가 발달할 때 중배엽이라는 세포층이 등쪽(척삭, notochord) 바로 옆에서 세 부분으로 나뉩니다. 그 세 부분은 1) 축측중배엽(paraxial mesoderm), 2) 중간중배엽(intermediate mesoderm), 3) 가쪽중배엽(lateral mesoderm)입니다. 축측중배엽은 몸길이를 따라 규칙적인 덩어리(체절, somite)로 분절되어 척추뼈와 골격근 등 근골격계의 기초가 됩니다. 중간중배엽은 신장과 생식계의 초기 구조를 만들고, 가쪽중배엽은 다시 몸쪽(체벽쪽)의 체벽층(somatic)과 내장쪽(splanchnic)으로 나뉘어 체강(coelomic)과 심혈관계·내장 기관의 대부분을 형성합니다. 그림에서는 이들 층의 위치 관계와 체강 공간이 어떻게 형성되는지 보여 줍니다. 한마디로, 중배엽의 세 영역은 각각 다른 장기와 조직의 씨앗이 되어 배아의 주요 구조를 만들어냅니다."
+    },
+    "usage": {
+      "input_tokens": 2107,
+      "output_tokens": 995,
+      "total_tokens": 3102
+    }
+  },
+  {
+    "file_name": "slide3.jpg",
+    "result": {
+      "skip": false,
+      "terms": [
+        {
+          "english": "Somite",
+          "korean": "몸분절"
+        },
+        {
+          "english": "Paraxial mesoderm",
+          "korean": "축엽중배엽"
+        },
+        {
+          "english": "Neural tube",
+          "korean": "신경관"
+        },
+        {
+          "english": "Axial skeleton",
+          "korean": "몸통뼈대"
+        },
+        {
+          "english": "Dermis",
+          "korean": "진피"
+        }
+      ],
+      "explanation": "Somite(몸분절)는 배아 발달 초기에 신경관(neural tube) 양쪽으로 규칙적으로 생기는 작은 세포 덩어리(마치 블록처럼 반복되는 구조)입니다. 원래 이 세포들은 축엽중배엽(paraxial mesoderm)에서 유래하며, 배아 나이 약 3주 무렵부터 차례로 형성됩니다. 이미지에서 보이는 것처럼 신경관 옆으로 줄지어 있는 여러 개의 소체가 바로 몸분절입니다. 각 몸분절은 이후 서로 다른 조직으로 분화하는데, 가운데 부분은 척추와 갈비 같은 몸통뼈대(axial skeleton)를 만들고, 주변 부분은 그 뼈에 붙는 골격근(근육)과 피부의 깊은 층인 진피(dermis)를 형성합니다. 요약하면, 몸분절은 배아의 ‘분절화’ 과정을 통해 나중에 척추, 근육, 피부의 한 부분을 만드는 출발점입니다."
+    },
+    "usage": {
+      "input_tokens": 2107,
+      "output_tokens": 534,
+      "total_tokens": 2641
+    }
+  },
+  {
+    "file_name": "slide4.jpg",
+    "result": {
+      "skip": false,
+      "terms": [
+        {
+          "english": "Somite",
+          "korean": "몸분절 (소마이트)"
+        },
+        {
+          "english": "Sclerotome",
+          "korean": "뼈분절 (스클레로톰)"
+        },
+        {
+          "english": "Dermomyotome",
+          "korean": "피부근육분절 (더모마이오톰)"
+        },
+        {
+          "english": "Dermatome",
+          "korean": "피부분절 (더마톰)"
+        },
+        {
+          "english": "Myotome",
+          "korean": "근육분절 (마이오톰)"
+        }
+      ],
+      "explanation": "Somite(몸분절)는 태아의 등 쪽(배아의 양측)에 줄지어 생기는 블록 같은 조직으로, 척추와 피부·근육 등 여러 구조의 원천입니다. 각 somite는 두 주요 부분으로 나뉩니다. 첫째, sclerotome(뼈분절)은 척추뼈(vertebrae)와 갈비뼈(rib)를 만듭니다. 둘째, dermomyotome(피부근육분절)은 다시 나뉘어 dermatome(피부분절)과 myotome(근육분절)이 됩니다. Dermatome은 몸통과 사지의 진피(dermis)를 형성하고, myotome은 축성 근육과 사지의 뼈대근육(skeletal muscle)을 만듭니다. 그림에서는 신경관(neural tube)과 노토코드(notochord) 옆에 somite들이 위치하고, 각각의 부분이 어떤 구조로 분화되는지 색으로 표시되어 있습니다. 요약하면 somite는 초기 배아에서 뼈·피부·근육을 만드는 기본 단위이며, sclerotome→뼈, dermatome→진피, myotome→골격근으로 분화합니다."
+    },
+    "usage": {
+      "input_tokens": 2107,
+      "output_tokens": 628,
+      "total_tokens": 2735
+    }
+  }
+]

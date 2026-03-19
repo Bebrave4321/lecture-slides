@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>슬라이드 상세</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="detail-page">
+    <div class="top-bar">
+      <a id="viewer-back-link" href="index.html" class="back-link">강의 목록으로</a>
+      <div class="top-bar-meta">
+        <div id="lecture-path" class="lecture-path"></div>
+        <div id="slide-position" class="slide-position"></div>
+        <form id="slide-jump-form" class="slide-jump-form">
+          <label for="slide-jump-input" class="sr-only">슬라이드 번호</label>
+          <input id="slide-jump-input" class="slide-jump-input" type="number" min="1" step="1" inputmode="numeric" />
+          <button type="submit" class="icon-button text-button">이동</button>
+        </form>
+      </div>
+    </div>
+
+    <section class="content-block">
+      <div class="section-header">
+        <h2 class="section-title">슬라이드</h2>
+        <div class="section-actions">
+          <button type="button" class="icon-button" data-target="slide">−</button>
+        </div>
+      </div>
+
+      <div id="slide-section-body">
+        <section class="slide-image-section">
+          <img id="slide-image" class="slide-image" src="" alt="슬라이드 이미지" />
+        </section>
+      </div>
+    </section>
+
+    <section class="content-block">
+      <div class="section-header">
+        <h2 class="section-title">핵심 용어</h2>
+        <div class="section-actions">
+          <button type="button" class="icon-button" data-action="edit-terms">✏️</button>
+          <button type="button" class="icon-button" data-target="terms">−</button>
+        </div>
+      </div>
+
+      <div id="terms-section-body">
+        <div id="terms-list" class="terms-list"></div>
+      </div>
+    </section>
+
+    <section class="content-block">
+      <div class="section-header">
+        <h2 class="section-title">설명</h2>
+        <div class="section-actions">
+          <button type="button" class="icon-button" data-action="edit-explanation">✏️</button>
+          <button type="button" class="icon-button" data-target="explanation">−</button>
+        </div>
+      </div>
+
+      <div id="explanation-section-body">
+        <div id="explanation" class="explanation"></div>
+      </div>
+    </section>
+
+    <section class="content-block">
+      <div class="section-header">
+        <h2 class="section-title">복습</h2>
+        <div class="section-actions">
+          <button type="button" class="icon-button" data-action="edit-review">✏️</button>
+          <button type="button" class="icon-button" data-target="review">−</button>
+        </div>
+      </div>
+
+      <div id="review-section-body">
+        <div id="review" class="explanation">아직 작성된 복습 내용이 없습니다.</div>
+      </div>
+    </section>
+
+    <div class="nav-buttons">
+      <a id="prev-button" class="nav-button" href="#">이전</a>
+      <a id="next-button" class="nav-button" href="#">다음</a>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="app-v3.js"></script>
+</body>
+</html>

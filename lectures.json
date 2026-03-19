@@ -1,0 +1,18 @@
+{
+  "subjects": [
+    {
+      "id": "sample-subject",
+      "title": "샘플 과목",
+      "description": "강의 묶음을 로컬에서 수동 관리하는 기본 과목입니다.",
+      "lectures": [
+        {
+          "id": "current-lecture",
+          "title": "현재 강의",
+          "description": "기존 단일 강의 데이터를 그대로 연결한 1단계 구조입니다.",
+          "resultsPath": "results.json",
+          "slidesPath": "slides"
+        }
+      ]
+    }
+  ]
+}
