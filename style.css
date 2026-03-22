@@ -169,6 +169,26 @@ body {
   transform: none;
 }
 
+.lecture-mode-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid #d8cec2;
+  border-radius: 10px;
+  background: #fff7ee;
+  color: #7c4d33;
+  text-decoration: none;
+  font: inherit;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.lecture-mode-link:hover {
+  background: #f8ede0;
+  transform: translateY(-1px);
+}
+
 /* 상세 페이지 */
 .detail-page {
   padding-top: 28px;
@@ -195,6 +215,37 @@ body {
   color: var(--text-secondary);
   letter-spacing: -0.01em;
   text-align: right;
+}
+
+.viewer-mode-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #efe7dc;
+  color: #5e5348;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.viewer-mode-indicator.raw {
+  background: #f6dfd2;
+  color: #8a4c2d;
+}
+
+.viewer-mode-toggle {
+  color: #8a4c2d;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.viewer-mode-toggle:hover {
+  color: #6f3b20;
 }
 
 .slide-jump-form {
@@ -678,6 +729,10 @@ body {
   }
 
   .lecture-download-button {
+    width: 100%;
+  }
+
+  .lecture-mode-link {
     width: 100%;
   }
 }

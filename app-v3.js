@@ -46,16 +46,35 @@ function buildSubjectHref(subjectId) {
   return `index.html?subject=${encodeURIComponent(subjectId)}`;
 }
 
-function buildLectureHref(subjectId, lectureId) {
-  return `index.html?subject=${encodeURIComponent(subjectId)}&lecture=${encodeURIComponent(
-    lectureId
-  )}`;
+function isRawResultsMode(params = new URLSearchParams(window.location.search)) {
+  return params.get("raw") === "1";
 }
 
-function buildViewerHref(subjectId, lectureId, index) {
-  return `viewer.html?subject=${encodeURIComponent(
-    subjectId
-  )}&lecture=${encodeURIComponent(lectureId)}&index=${index}`;
+function buildLectureHref(subjectId, lectureId, rawMode = false) {
+  const params = new URLSearchParams({
+    subject: subjectId,
+    lecture: lectureId,
+  });
+
+  if (rawMode) {
+    params.set("raw", "1");
+  }
+
+  return `index.html?${params.toString()}`;
+}
+
+function buildViewerHref(subjectId, lectureId, index, rawMode = false) {
+  const params = new URLSearchParams({
+    subject: subjectId,
+    lecture: lectureId,
+    index: String(index),
+  });
+
+  if (rawMode) {
+    params.set("raw", "1");
+  }
+
+  return `viewer.html?${params.toString()}`;
 }
 
 function getStoragePrefix(subjectId, lectureId) {
@@ -140,7 +159,15 @@ function getSavedTerms(subjectId, lectureId, index, defaultTerms) {
   }
 }
 
-function getCurrentSlideEdits(subjectId, lectureId, index, result) {
+function getCurrentSlideEdits(subjectId, lectureId, index, result, options = {}) {
+  if (options.rawMode) {
+    return {
+      explanation: result.explanation || DEFAULT_EXPLANATION,
+      review: result.review || DEFAULT_REVIEW,
+      terms: result.terms || [],
+    };
+  }
+
   return {
     explanation: getSavedExplanation(
       subjectId,
@@ -437,6 +464,11 @@ function createLectureCard(subject, lecture) {
   const actions = document.createElement("div");
   actions.className = "lecture-card-actions";
 
+  const rawResultsLink = document.createElement("a");
+  rawResultsLink.href = buildLectureHref(subject.id, lecture.id, true);
+  rawResultsLink.className = "lecture-mode-link";
+  rawResultsLink.textContent = "생성 결과 보기";
+
   const downloadButton = document.createElement("button");
   downloadButton.type = "button";
   downloadButton.className = "lecture-download-button";
@@ -452,6 +484,7 @@ function createLectureCard(subject, lecture) {
     }
   });
 
+  actions.appendChild(rawResultsLink);
   actions.appendChild(downloadButton);
   card.appendChild(link);
   card.appendChild(actions);
@@ -480,6 +513,30 @@ async function downloadMergedLectureJson(subject, lecture) {
   anchor.click();
   document.body.removeChild(anchor);
   URL.revokeObjectURL(downloadUrl);
+}
+
+function configureViewerModeUi(subject, lecture, index, rawMode) {
+  const modeIndicator = document.getElementById("viewer-mode-indicator");
+  const modeToggle = document.getElementById("viewer-mode-toggle");
+  const editButtons = document.querySelectorAll("[data-action]");
+
+  if (modeIndicator) {
+    modeIndicator.hidden = false;
+    modeIndicator.textContent = rawMode
+      ? "생성 결과 보기 모드: 저장된 수정본 무시"
+      : "편집 반영 모드: localStorage/Supabase 우선";
+    modeIndicator.classList.toggle("raw", rawMode);
+  }
+
+  if (modeToggle) {
+    modeToggle.hidden = false;
+    modeToggle.href = buildViewerHref(subject.id, lecture.id, index, !rawMode);
+    modeToggle.textContent = rawMode ? "편집 반영 보기" : "생성 결과만 보기";
+  }
+
+  editButtons.forEach((button) => {
+    button.hidden = rawMode;
+  });
 }
 
 function renderTermsList(termsList, terms) {
@@ -772,7 +829,7 @@ function setupTermsEditor(subject, lecture, slideIndex) {
   });
 }
 
-function setupSlideJump(subjectId, lectureId, totalSlides, currentIndex) {
+function setupSlideJump(subjectId, lectureId, totalSlides, currentIndex, rawMode = false) {
   const form = document.getElementById("slide-jump-form");
   const input = document.getElementById("slide-jump-input");
 
@@ -797,7 +854,12 @@ function setupSlideJump(subjectId, lectureId, totalSlides, currentIndex) {
       return;
     }
 
-    window.location.href = buildViewerHref(subjectId, lectureId, nextSlideNumber - 1);
+    window.location.href = buildViewerHref(
+      subjectId,
+      lectureId,
+      nextSlideNumber - 1,
+      rawMode
+    );
   });
 }
 
@@ -865,10 +927,14 @@ async function renderSlideList(subject, lecture) {
 
   if (!pageTitle || !pageSubtitle || !backLink || !listContent) return;
 
+  const params = new URLSearchParams(window.location.search);
+  const rawMode = isRawResultsMode(params);
   const data = await fetchJson(getLectureResultsPath(lecture));
 
   pageTitle.textContent = "슬라이드 목록";
-  pageSubtitle.textContent = `${subject.title} > ${lecture.title}`;
+  pageSubtitle.textContent = rawMode
+    ? `${subject.title} > ${lecture.title} · 생성 결과 보기`
+    : `${subject.title} > ${lecture.title}`;
   backLink.hidden = false;
   backLink.href = buildSubjectHref(subject.id);
   backLink.textContent = "강의 목록으로";
@@ -881,7 +947,7 @@ async function renderSlideList(subject, lecture) {
     slideList.appendChild(
       createListCard(
         `slide${index + 1}`,
-        buildViewerHref(subject.id, lecture.id, index),
+        buildViewerHref(subject.id, lecture.id, index, rawMode),
         item.file_name
       )
     );
@@ -938,6 +1004,7 @@ async function loadSlideDetail() {
   const params = new URLSearchParams(window.location.search);
   const subjectId = params.get("subject");
   const lectureId = params.get("lecture");
+  const rawMode = isRawResultsMode(params);
   const subject = findSubjectById(catalog, subjectId) || getDefaultSubject(catalog);
 
   if (!subject) {
@@ -955,18 +1022,20 @@ async function loadSlideDetail() {
   }
 
   const data = await fetchJson(getLectureResultsPath(lecture));
-  await tryLoadLectureEditsFromSupabase(subject, lecture);
+  if (!rawMode) {
+    await tryLoadLectureEditsFromSupabase(subject, lecture);
+  }
   const index = Number(params.get("index"));
 
   if (Number.isNaN(index) || index < 0 || index >= data.length) {
     alert("올바르지 않은 슬라이드 접근입니다.");
-    window.location.href = buildLectureHref(subject.id, lecture.id);
+    window.location.href = buildLectureHref(subject.id, lecture.id, rawMode);
     return null;
   }
 
   const item = data[index];
   const result = item.result || {};
-  const edits = getCurrentSlideEdits(subject.id, lecture.id, index, result);
+  const edits = getCurrentSlideEdits(subject.id, lecture.id, index, result, { rawMode });
 
   const viewerBackLink = document.getElementById("viewer-back-link");
   const lecturePath = document.getElementById("lecture-path");
@@ -978,13 +1047,15 @@ async function loadSlideDetail() {
   const nextButton = document.getElementById("next-button");
 
   if (viewerBackLink) {
-    viewerBackLink.href = buildLectureHref(subject.id, lecture.id);
+    viewerBackLink.href = buildLectureHref(subject.id, lecture.id, rawMode);
     viewerBackLink.textContent = "슬라이드 목록";
   }
 
   if (lecturePath) {
     lecturePath.textContent = `${subject.title} > ${lecture.title}`;
   }
+
+  configureViewerModeUi(subject, lecture, index, rawMode);
 
   slidePosition.textContent = `${index + 1} / ${data.length}`;
   slideImage.src = `${getLectureSlidesPath(lecture)}/${item.file_name}`;
@@ -998,7 +1069,7 @@ async function loadSlideDetail() {
   }
 
   if (index > 0) {
-    prevButton.href = buildViewerHref(subject.id, lecture.id, index - 1);
+    prevButton.href = buildViewerHref(subject.id, lecture.id, index - 1, rawMode);
     prevButton.classList.remove("disabled");
   } else {
     prevButton.removeAttribute("href");
@@ -1006,16 +1077,25 @@ async function loadSlideDetail() {
   }
 
   if (index < data.length - 1) {
-    nextButton.href = buildViewerHref(subject.id, lecture.id, index + 1);
+    nextButton.href = buildViewerHref(subject.id, lecture.id, index + 1, rawMode);
     nextButton.classList.remove("disabled");
   } else {
     nextButton.removeAttribute("href");
     nextButton.classList.add("disabled");
   }
 
-  setupSlideJump(subject.id, lecture.id, data.length, index);
+  setupSlideJump(subject.id, lecture.id, data.length, index, rawMode);
 
-  return { index, subjectId: subject.id, lectureId: lecture.id, result, item, subject, lecture };
+  return {
+    index,
+    subjectId: subject.id,
+    lectureId: lecture.id,
+    result,
+    item,
+    subject,
+    lecture,
+    rawMode,
+  };
 }
 
 loadIndexPage();
@@ -1024,6 +1104,7 @@ loadSlideDetail().then((slideInfo) => {
 
   reorderDetailSections();
   setupSectionToggles();
+  if (slideInfo.rawMode) return;
   setupExplanationEditor(slideInfo.subject, slideInfo.lecture, slideInfo.index);
   setupReviewEditor(slideInfo.subject, slideInfo.lecture, slideInfo.index);
   setupTermsEditor(slideInfo.subject, slideInfo.lecture, slideInfo.index);
