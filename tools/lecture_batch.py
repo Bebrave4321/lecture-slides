@@ -3,7 +3,6 @@ import base64
 import json
 import mimetypes
 import re
-import sys
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -12,18 +11,18 @@ try:
     from openai import OpenAI
 except ImportError as exc:
     raise SystemExit(
-        "openai 패키지가 필요합니다. `pip install openai` 후 다시 실행해 주세요."
+        "The `openai` package is required. Install it with `pip install openai` and try again."
     ) from exc
 
 
-PROMPT_VERSION = "2026-03-20"
+PROMPT_VERSION = "2026-03-22c"
 DEFAULT_MODEL = "gpt-5.4-mini"
 DEFAULT_MAX_COMPLETION_TOKENS = 1200
 SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 MODEL_CHOICES = [
-    ("1", "gpt-5.4-mini", "권장 기본값"),
-    ("2", "gpt-5-mini", "더 저렴한 선택"),
-    ("3", "gpt-5.4", "더 강한 모델"),
+    ("1", "gpt-5.4-mini", "recommended default"),
+    ("2", "gpt-5-mini", "lower cost"),
+    ("3", "gpt-5.4", "stronger model"),
 ]
 
 SLIDE_SCHEMA = {
@@ -33,6 +32,12 @@ SLIDE_SCHEMA = {
         "type": "object",
         "properties": {
             "skip": {"type": "boolean"},
+            "has_visual_teaching_content": {"type": "boolean"},
+            "image_observations": {
+                "type": "array",
+                "items": {"type": "string"},
+            },
+            "visual_summary": {"type": "string"},
             "terms": {
                 "type": "array",
                 "items": {
@@ -47,34 +52,85 @@ SLIDE_SCHEMA = {
             },
             "explanation": {"type": "string"},
         },
-        "required": ["skip", "terms", "explanation"],
+        "required": [
+            "skip",
+            "has_visual_teaching_content",
+            "image_observations",
+            "visual_summary",
+            "terms",
+            "explanation",
+        ],
         "additionalProperties": False,
     },
 }
 
-PROMPT = """다음 형식에 맞춰 JSON으로만 답해줘.
+SYSTEM_PROMPT = """You read one lecture slide image and produce Korean study-help content.
 
-규칙:
-- 단원명, 챕터 제목, 구분용 슬라이드처럼 실질적 학습 정보가 부족하면:
+Prioritize what is visibly shown in the slide, not just the text.
+When a diagram, labeled figure, timeline, multi-panel image, or annotated illustration is present,
+you must actively read it and use it in the explanation.
+
+Return valid JSON only.
+"""
+
+PROMPT = """Return JSON that matches the schema exactly.
+
+Decision rules:
+- If the slide is a cover page, section divider, blank page, decorative page, or too unreadable to explain:
   - skip = true
+  - has_visual_teaching_content = false
+  - image_observations = []
+  - visual_summary = ""
   - terms = []
-  - explanation = "[설명 생략] 단원/구분 슬라이드로 판단되어 설명을 생략합니다."
-
-- 그 외에는:
+  - explanation = a short Korean skip message.
+- Otherwise:
   - skip = false
-  - terms에는 슬라이드의 텍스트 또는 그림 라벨에 실제로 보이는 핵심 용어만 2~5개 넣을 것
-  - terms의 english에는 영어 의학/생물학 용어만 넣을 것
-  - terms의 korean에는 해당 english 용어에 대응하는 한국어 용어만 넣을 것
-  - terms의 english와 korean은 서로 1:1로 대응되게 작성할 것
-  - korean 표기는 한 슬라이드 안에서 하나의 표기로 통일하고, 같은 뜻의 다른 표현을 섞지 말 것
-  - 불필요한 별칭, 과도한 괄호 설명, 발음 표기는 넣지 말 것
-  - explanation은 슬라이드의 텍스트와 이미지 내용을 바탕으로 작성할 것
-  - explanation은 처음 배우는 사람도 이해할 수 있도록, 고등학생 수준의 눈높이로 아주 친절하고 쉽게 설명할 것
-  - explanation은 3~6문장 정도로, 핵심 개념과 구조·역할이 자연스럽게 이해되도록 작성할 것
 
-중요:
-- review는 생성하지 않는다.
-- terms와 explanation만 판단해서 반환한다.
+Required workflow before writing the explanation:
+1. Inspect the whole slide: title, bullets, labels, arrows, stage markers, tables, captions, and every figure.
+2. Decide whether the slide contains meaningful visual teaching content beyond plain bullets.
+3. If yes, set has_visual_teaching_content = true, write image_observations, then write visual_summary.
+4. If no, set has_visual_teaching_content = false, image_observations = [], visual_summary = "".
+5. Only then write the explanation.
+
+Rules for has_visual_teaching_content:
+- True when the slide has a diagram, labeled figure, multi-panel sequence, chart, table, microscopy image, or annotated photo that teaches something important.
+- False only when the slide is essentially plain text or the figure is too tiny/unreadable to teach from.
+- If there is a meaningful figure and you set this to false, that is an error.
+
+Rules for image_observations:
+- Each item must describe a specific visible detail, not a vague statement.
+- Mention location or panel labels when possible, such as left/right, top/bottom, A1-D3, arrows, sequence, or highlighted structure.
+- Good: "On the right, four embryo drawings compare weeks 5, 6, 7, and 8, showing the body becoming more human-like."
+- Bad: "There is a diagram." or "An image helps understanding."
+- If has_visual_teaching_content = true, image_observations must contain 2 to 4 items.
+- If has_visual_teaching_content = false, image_observations must be [].
+
+Rules for visual_summary:
+- Write 1 to 2 Korean sentences that explain what the figure itself is teaching.
+- Focus on the visual lesson, not on copying bullet text.
+- If has_visual_teaching_content = false, visual_summary must be an empty string.
+
+Rules for terms:
+- Pick 2 to 5 important terms from the slide.
+- terms[].english should keep the original technical term.
+- terms[].korean should be a short Korean meaning or label matched 1:1 with the English term.
+
+Rules for explanation:
+- Write in natural Korean for a middle or high school student seeing the topic for the first time.
+- Sound like a teacher explaining next to the student: clear, warm, and a little vivid, but not childish or jokey.
+- Keep the slide self-contained. Do not refer to previous or next slides.
+- Do not merely rewrite bullet points. Explain what the slide is showing and why it matters.
+- Use 5 to 8 sentences.
+- Start by stating the main idea in plain language.
+- If has_visual_teaching_content = true, explicitly use at least 3 visual details from image_observations or labels in the explanation.
+- If has_visual_teaching_content = true, spend at least half of the sentences on what the figure is showing and how to read it.
+- If has_visual_teaching_content = true, use visual_summary as the backbone of the explanation instead of treating the image as a side note.
+- One short analogy is allowed only if it genuinely helps understanding.
+
+Language rules:
+- All output strings must be in Korean except terms[].english.
+- review is never generated here, so do not invent review-like content.
 """
 
 
@@ -95,7 +151,7 @@ def normalize_path(path_str: str) -> Path:
 
 def ensure_slides_dir(slides_dir: Path) -> list[Path]:
     if not slides_dir.exists() or not slides_dir.is_dir():
-        raise SystemExit(f"슬라이드 폴더를 찾을 수 없습니다: {slides_dir}")
+        raise SystemExit(f"Slides directory not found: {slides_dir}")
 
     slides = sorted(
         [path for path in slides_dir.iterdir() if path.suffix.lower() in SUPPORTED_EXTENSIONS],
@@ -104,7 +160,7 @@ def ensure_slides_dir(slides_dir: Path) -> list[Path]:
 
     if not slides:
         raise SystemExit(
-            "슬라이드 이미지가 없습니다. jpg/jpeg/png/webp 파일을 넣은 뒤 다시 실행해 주세요."
+            "No slide images were found. Add jpg/jpeg/png/webp files and try again."
         )
 
     return slides
@@ -134,21 +190,26 @@ def image_to_data_url(path: Path) -> str:
     return f"data:{guess_mime_type(path)};base64,{encoded}"
 
 
+def build_messages(image_path: Path) -> list[dict]:
+    return [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": PROMPT},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": image_to_data_url(image_path)},
+                },
+            ],
+        },
+    ]
+
+
 def make_request_body(image_path: Path, model: str, max_completion_tokens: int) -> dict:
     return {
         "model": model,
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": PROMPT},
-                    {
-                        "type": "image_url",
-                        "image_url": {"url": image_to_data_url(image_path)},
-                    },
-                ],
-            }
-        ],
+        "messages": build_messages(image_path),
         "response_format": {
             "type": "json_schema",
             "json_schema": SLIDE_SCHEMA,
@@ -176,7 +237,7 @@ def write_jsonl(path: Path, rows: list[dict]):
 def load_job(work_dir: Path) -> dict:
     job_path = work_dir / "job.json"
     if not job_path.exists():
-        raise SystemExit(f"작업 정보를 찾을 수 없습니다: {job_path}")
+        raise SystemExit(f"Job metadata not found: {job_path}")
     return load_json(job_path)
 
 
@@ -185,12 +246,12 @@ def save_job(work_dir: Path, job: dict):
 
 
 def choose_model_interactively() -> str:
-    print("사용할 모델을 고르세요.")
+    print("Choose a model.")
     for key, model_name, description in MODEL_CHOICES:
         print(f"{key}. {model_name} ({description})")
 
     while True:
-        selected = input(f"번호 입력 [기본값 {MODEL_CHOICES[0][0]}]: ").strip()
+        selected = input(f"Enter number [default {MODEL_CHOICES[0][0]}]: ").strip()
         if not selected:
             return DEFAULT_MODEL
 
@@ -198,10 +259,12 @@ def choose_model_interactively() -> str:
             if selected == key:
                 return model_name
 
-        print("올바른 번호를 입력해 주세요.")
+        print("Please enter a valid number.")
 
 
-def create_request_rows(slides: list[Path], model: str, max_completion_tokens: int) -> tuple[list[dict], list[dict]]:
+def create_request_rows(
+    slides: list[Path], model: str, max_completion_tokens: int
+) -> tuple[list[dict], list[dict]]:
     request_rows = []
     manifest_rows = []
 
@@ -294,16 +357,16 @@ def command_start(args):
         },
     )
 
-    print("배치 작업을 시작했습니다.")
+    print("Batch job started.")
     print(f"- slides_dir: {slides_dir}")
     print(f"- work_dir: {work_dir}")
     print(f"- model: {model_name}")
     print(f"- batch_id: {batch.id}")
     print("")
-    print("다음 확인 명령:")
+    print("Check status with:")
     print(f'python tools/lecture_batch.py status --work-dir "{work_dir}"')
     print("")
-    print("완료 후 결과 생성 명령:")
+    print("Build results when completed:")
     print(f'python tools/lecture_batch.py finish --work-dir "{work_dir}"')
 
 
@@ -353,6 +416,25 @@ def parse_terms(raw_terms) -> list[dict]:
     return normalized_terms
 
 
+def parse_string_list(raw_items, *, limit: int | None = None) -> list[str]:
+    if not isinstance(raw_items, list):
+        return []
+
+    normalized_items = []
+    seen = set()
+
+    for item in raw_items:
+        value = str(item).strip()
+        if not value or value in seen:
+            continue
+        normalized_items.append(value)
+        seen.add(value)
+        if limit and len(normalized_items) >= limit:
+            break
+
+    return normalized_items
+
+
 def extract_text_from_file_response(file_response) -> str:
     text_attr = getattr(file_response, "text", None)
     if isinstance(text_attr, str):
@@ -372,7 +454,36 @@ def extract_text_from_file_response(file_response) -> str:
         if isinstance(data, str):
             return data
 
-    raise ValueError("파일 응답에서 텍스트를 꺼낼 수 없습니다.")
+    raise ValueError("Could not extract text from file response.")
+
+
+def extract_message_content_text(content) -> str:
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return "".join(
+            item.get("text", "")
+            for item in content
+            if isinstance(item, dict) and isinstance(item.get("text"), str)
+        )
+    raise ValueError("Unsupported message.content format.")
+
+
+def normalize_payload(payload: dict) -> dict:
+    return {
+        "skip": bool(payload.get("skip", False)),
+        "has_visual_teaching_content": bool(
+            payload.get("has_visual_teaching_content", False)
+        ),
+        "image_observations": parse_string_list(
+            payload.get("image_observations"),
+            limit=4,
+        ),
+        "visual_summary": str(payload.get("visual_summary", "")).strip(),
+        "terms": parse_terms(payload.get("terms")),
+        "explanation": str(payload.get("explanation", "")).strip(),
+        "review": "",
+    }
 
 
 def parse_model_payload(line: dict) -> tuple[dict, dict]:
@@ -380,31 +491,15 @@ def parse_model_payload(line: dict) -> tuple[dict, dict]:
     body = response.get("body", {})
     choices = body.get("choices", [])
     if not choices:
-        raise ValueError("응답 choices가 없습니다.")
+        raise ValueError("Response choices are missing.")
 
     message = choices[0].get("message", {})
-    content = message.get("content")
-    if isinstance(content, str):
-        content_text = content
-    elif isinstance(content, list):
-        content_text = "".join(
-            item.get("text", "")
-            for item in content
-            if isinstance(item, dict) and isinstance(item.get("text"), str)
-        )
-    else:
-        raise ValueError("message.content 형식을 해석할 수 없습니다.")
-
+    content_text = extract_message_content_text(message.get("content"))
     if not content_text.strip():
-        raise ValueError("message.content가 비어 있습니다.")
+        raise ValueError("message.content is empty.")
 
     payload = json.loads(content_text)
-    normalized = {
-        "skip": bool(payload.get("skip", False)),
-        "terms": parse_terms(payload.get("terms")),
-        "explanation": str(payload.get("explanation", "")).strip(),
-        "review": "",
-    }
+    normalized = normalize_payload(payload)
     usage = body.get("usage", {}) or {}
     normalized_usage = {
         "input_tokens": int(usage.get("prompt_tokens", usage.get("input_tokens", 0)) or 0),
@@ -414,6 +509,119 @@ def parse_model_payload(line: dict) -> tuple[dict, dict]:
         "total_tokens": int(usage.get("total_tokens", 0) or 0),
     }
     return normalized, normalized_usage
+
+
+def parse_chat_completion_payload(completion) -> tuple[dict, dict]:
+    choices = getattr(completion, "choices", None) or []
+    if not choices:
+        raise ValueError("Response choices are missing.")
+
+    message = getattr(choices[0], "message", None)
+    if not message:
+        raise ValueError("Response message is missing.")
+
+    content_text = extract_message_content_text(getattr(message, "content", None))
+    if not content_text.strip():
+        raise ValueError("message.content is empty.")
+
+    payload = json.loads(content_text)
+    normalized = normalize_payload(payload)
+
+    usage = getattr(completion, "usage", None)
+    normalized_usage = {
+        "input_tokens": int(getattr(usage, "prompt_tokens", 0) or 0),
+        "output_tokens": int(getattr(usage, "completion_tokens", 0) or 0),
+        "total_tokens": int(getattr(usage, "total_tokens", 0) or 0),
+    }
+    return normalized, normalized_usage
+
+
+def print_preview_result(index: int, total: int, slide_path: Path, parsed_result: dict):
+    print("")
+    print(f"[{index}/{total}] {slide_path.name}")
+    print(
+        "has_visual_teaching_content: "
+        f"{parsed_result['has_visual_teaching_content']}"
+    )
+    if parsed_result["image_observations"]:
+        print("image_observations:")
+        for observation in parsed_result["image_observations"]:
+            print(f"- {observation}")
+    if parsed_result["visual_summary"]:
+        print("visual_summary:")
+        print(parsed_result["visual_summary"])
+    print(parsed_result["explanation"])
+
+
+def command_preview(args):
+    model_name = args.model or choose_model_interactively()
+    slides_dir = normalize_path(args.slides_dir)
+    slides = ensure_slides_dir(slides_dir)
+
+    if args.limit:
+        slides = slides[: args.limit]
+
+    if args.slide_name:
+        requested = {name.strip() for name in args.slide_name if name.strip()}
+        slides = [slide for slide in slides if slide.name in requested]
+        if not slides:
+            raise SystemExit("No slides matched the requested slide names.")
+
+    results_path = (
+        normalize_path(args.results_path)
+        if args.results_path
+        else lecture_root_from_slides(slides_dir) / "results-preview.json"
+    )
+
+    client = OpenAI()
+    results = []
+    usage_totals = defaultdict(int)
+
+    for index, slide_path in enumerate(slides, start=1):
+        completion = client.chat.completions.create(
+            **make_request_body(slide_path, model_name, args.max_completion_tokens)
+        )
+
+        parsed_result, usage = parse_chat_completion_payload(completion)
+        usage_totals["input_tokens"] += usage["input_tokens"]
+        usage_totals["output_tokens"] += usage["output_tokens"]
+        usage_totals["total_tokens"] += usage["total_tokens"]
+
+        results.append(
+            {
+                "file_name": slide_path.name,
+                "result": parsed_result,
+                "usage": usage,
+            }
+        )
+
+        print_preview_result(index, len(slides), slide_path, parsed_result)
+
+    write_json(results_path, results)
+    write_json(
+        results_path.parent / "summary-preview.json",
+        {
+            "prompt_version": PROMPT_VERSION,
+            "model": model_name,
+            "slides_dir": str(slides_dir),
+            "results_path": str(results_path),
+            "slide_count": len(results),
+            "usage_totals": dict(usage_totals),
+            "generated_at": now_iso(),
+        },
+    )
+
+    print("")
+    print("Preview generation finished.")
+    print(f"- results_path: {results_path}")
+    print(f"- slide_count: {len(results)}")
+    print(
+        "- usage_totals: input={0}, output={1}, total={2}".format(
+            usage_totals["input_tokens"],
+            usage_totals["output_tokens"],
+            usage_totals["total_tokens"],
+        )
+    )
 
 
 def command_finish(args):
@@ -431,12 +639,12 @@ def command_finish(args):
     save_job(work_dir, job)
 
     if batch.status != "completed":
-        print(f"아직 완료되지 않았습니다. 현재 상태: {batch.status}")
-        print(f'확인 명령: python tools/lecture_batch.py status --work-dir "{work_dir}"')
+        print(f"Batch is not complete yet. Current status: {batch.status}")
+        print(f'Check again with: python tools/lecture_batch.py status --work-dir "{work_dir}"')
         return
 
     if not getattr(batch, "output_file_id", None):
-        raise SystemExit("완료되었지만 output_file_id가 없습니다.")
+        raise SystemExit("Batch completed, but output_file_id is missing.")
 
     manifest = load_json(Path(job["manifest_path"]))
     raw_output_path = Path(job["raw_output_path"])
@@ -507,56 +715,89 @@ def command_finish(args):
     }
     write_json(work_dir / "summary.json", summary)
 
-    print("results.json 생성을 완료했습니다.")
+    print("results.json generation completed.")
     print(f"- results_path: {results_path}")
     print(f"- completed_count: {len(results)} / {manifest['slide_count']}")
     if missing:
         print(f"- missing_files: {', '.join(missing)}")
     if failures:
-        print(f"- parse_failures: {len(failures)}건 (summary.json 확인)")
+        print(f"- parse_failures: {len(failures)} (see summary.json)")
 
 
 def build_parser():
     parser = argparse.ArgumentParser(
-        description="강의 슬라이드 이미지 폴더를 OpenAI Batch API로 처리해 results.json을 생성합니다."
+        description="Generate slide explanations with the OpenAI Batch API or preview mode."
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     start_parser = subparsers.add_parser(
-        "start", help="배치 요청 파일을 만들고 OpenAI Batch 작업을 시작합니다."
+        "start",
+        help="Create a batch request file and start an OpenAI Batch job.",
     )
-    start_parser.add_argument("--slides-dir", required=True, help="슬라이드 이미지 폴더 경로")
+    start_parser.add_argument("--slides-dir", required=True, help="Path to the slide image directory.")
     start_parser.add_argument(
         "--work-dir",
-        help='작업 폴더 경로 (기본값: 강의 폴더 아래 ".openai-batch")',
+        help='Path to the batch work directory. Default: lecture root/.openai-batch',
     )
     start_parser.add_argument(
         "--results-path",
-        help='완성된 results.json 경로 (기본값: 강의 폴더의 "results.json")',
+        help='Output path for results.json. Default: lecture root/results.json',
     )
     start_parser.add_argument(
         "--model",
-        help="사용할 모델 이름. 입력하지 않으면 실행 중 번호로 선택합니다.",
+        help="Model name. If omitted, you can choose interactively.",
     )
     start_parser.add_argument(
         "--max-completion-tokens",
         type=int,
         default=DEFAULT_MAX_COMPLETION_TOKENS,
-        help="슬라이드당 최대 출력 토큰 수",
+        help="Maximum completion tokens per slide.",
     )
     start_parser.set_defaults(func=command_start)
 
-    status_parser = subparsers.add_parser("status", help="현재 Batch 상태를 확인합니다.")
-    status_parser.add_argument("--work-dir", required=True, help="작업 폴더 경로")
+    preview_parser = subparsers.add_parser(
+        "preview",
+        help="Run immediate non-batch requests for prompt testing.",
+    )
+    preview_parser.add_argument("--slides-dir", required=True, help="Path to the slide image directory.")
+    preview_parser.add_argument(
+        "--results-path",
+        help='Output path for preview results. Default: lecture root/results-preview.json',
+    )
+    preview_parser.add_argument(
+        "--model",
+        help="Model name. If omitted, you can choose interactively.",
+    )
+    preview_parser.add_argument(
+        "--limit",
+        type=int,
+        help="Only process the first N slides after sorting.",
+    )
+    preview_parser.add_argument(
+        "--slide-name",
+        action="append",
+        help="Only process a specific slide filename. Can be repeated.",
+    )
+    preview_parser.add_argument(
+        "--max-completion-tokens",
+        type=int,
+        default=DEFAULT_MAX_COMPLETION_TOKENS,
+        help="Maximum completion tokens per slide.",
+    )
+    preview_parser.set_defaults(func=command_preview)
+
+    status_parser = subparsers.add_parser("status", help="Check the current Batch job status.")
+    status_parser.add_argument("--work-dir", required=True, help="Path to the batch work directory.")
     status_parser.set_defaults(func=command_status)
 
     finish_parser = subparsers.add_parser(
-        "finish", help="완료된 Batch 결과를 받아 현재 사이트 형식의 results.json으로 변환합니다."
+        "finish",
+        help="Download a completed Batch output and build results.json.",
     )
-    finish_parser.add_argument("--work-dir", required=True, help="작업 폴더 경로")
+    finish_parser.add_argument("--work-dir", required=True, help="Path to the batch work directory.")
     finish_parser.add_argument(
         "--results-path",
-        help="results.json을 다른 경로로 저장하고 싶을 때 사용",
+        help="Optional alternative output path for results.json.",
     )
     finish_parser.set_defaults(func=command_finish)
 
